@@ -21,7 +21,7 @@ def make_tree(path):
                 tree['children'].append(dict(name=fn))
     return tree
 
-app = Flask(__name__, static_folder="/root/gifserver/static")
+app = Flask(__name__, static_url_path="/root/gifserver/static", static_folder="/root/gifserver/static")
 
 @app.route('/')
 def dirtree():
