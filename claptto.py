@@ -33,6 +33,7 @@ DELAY = 35
 NOTIFY_ON_TIME = 0.3
 NOTIFY_LOOP_COUNT = 4
 GIF_DIRECTORY = "/mnt/pictures"
+PNG_DIRECTORY = "/mnt/pngs"
 
 # GLOBAL VARIABLES
 printonce = True
@@ -50,8 +51,8 @@ class Claptto(threading.Thread):
         self.dead = False
         self.in_clap_session = False
         self.in_image_session = False
-        self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 /tmp/int_pic_{2:03d}.png"
-        self.gifcmd = "convert -loop {0} -delay {1} /tmp/int_pic_*.png {2}/claptto_pic_{3}.gif"
+        self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
+        self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
         # CHECK FOR THE DIRECTORY TO STORE MOVIES
         self._directory_check()
 
@@ -59,6 +60,9 @@ class Claptto(threading.Thread):
         if not os.path.exists(GIF_DIRECTORY):
             print("CREATING GIF DIRECTORY")
             os.makedirs(GIF_DIRECTORY)
+        if not os.path.exists(PNG_DIRECTORY):
+            print("CREATING TEMPORARY PNG DIRECTORY")
+            os.makedirs(PNG_DIRECTORY)
 
     def kill(self):
         self.dead = True
@@ -100,7 +104,7 @@ class Claptto(threading.Thread):
 
         print("WE BE MAKIN THOSE GIFS YOU SEE")
         ctime = int(datetime.datetime.utcnow().strftime("%s"))
-        mycmd = self.gifcmd.format(self.loop_count, self.delay, GIF_DIRECTORY, ctime)
+        mycmd = self.gifcmd.format(self.loop_count, self.delay, PNG_DIRECTORY, GIF_DIRECTORY, ctime)
         print(mycmd)
         self.in_image_session = True
         # MAKE GIF
@@ -111,7 +115,7 @@ class Claptto(threading.Thread):
 
     # REMOVE THE INTERIM PNG
     def remove_interim_png(self):
-        globber = "/tmp/int_*.png"
+        globber = "{0}/int_*.png".format(PNG_DIRECTORY)
         gobs = glob.glob(globber)
         for g in gobs:
             os.remove(g)
@@ -123,7 +127,7 @@ class Claptto(threading.Thread):
 
         print("HERE BE PICTURE TAKIN")
         # QUIET DEVICE RESO NO BANNER PNG 
-        mycmd = self.piccmd.format(self.device, self.reso, self.pic_count)
+        mycmd = self.piccmd.format(self.device, self.reso, PNG_DIRECTORY, self.pic_count)
         mycmd = mycmd.split()
         print(mycmd)
         self.in_image_session = True
