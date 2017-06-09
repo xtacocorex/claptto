@@ -54,7 +54,7 @@ class Claptto(threading.Thread):
         self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
         self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
         #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
-        self.gifcmd = "gifsicle --loopcount --delay={0} {1}/int_pic_*.gif > {2}/claptto_pic_{3}.gif"
+        self.gifcmd = "gifsicle --loopcount --delay={0} --colors 256 {1}/*.gif -o {2}/claptto_pic_{3}.gif"
         # CHECK FOR THE DIRECTORY TO STORE MOVIES
         self._directory_check()
 
@@ -68,6 +68,8 @@ class Claptto(threading.Thread):
 
     def kill(self):
         self.dead = True
+        # FORCE THIS TO BE FALSE TO KICK US OUT
+        self.in_clap_session = False
 
     def setup_alsa(self):
         # SETUP AUDIO FOR THE CLAPPER
