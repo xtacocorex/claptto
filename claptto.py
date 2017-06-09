@@ -52,7 +52,9 @@ class Claptto(threading.Thread):
         self.in_clap_session = False
         self.in_image_session = False
         self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
-        self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
+        self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
+        #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
+        self.gifcmd = "gifsicle --loop -delay={0} {1}/int_pic_*.gif > {2}/claptto_pic_{3}.gif"
         # CHECK FOR THE DIRECTORY TO STORE MOVIES
         self._directory_check()
 
@@ -104,7 +106,10 @@ class Claptto(threading.Thread):
 
         print("WE BE MAKIN THOSE GIFS YOU SEE")
         ctime = int(datetime.datetime.utcnow().strftime("%s"))
-        mycmd = self.gifcmd.format(self.loop_count, self.delay, PNG_DIRECTORY, GIF_DIRECTORY, ctime)
+        # FFMPEG
+        #mycmd = self.gifcmd.format(self.loop_count, self.delay, PNG_DIRECTORY, GIF_DIRECTORY, ctime)
+        # GIFSICLE
+        mycmd = self.gifcmd.format(self.delay, PNG_DIRECTORY, GIF_DIRECTORY, ctime)
         print(mycmd)
         self.in_image_session = True
         # MAKE GIF
@@ -114,8 +119,8 @@ class Claptto(threading.Thread):
         self.in_image_session = False
 
     # REMOVE THE INTERIM PNG
-    def remove_interim_png(self):
-        globber = "{0}/int_*.png".format(PNG_DIRECTORY)
+    def remove_interim_images(self):
+        globber = "{0}/int_*.*".format(PNG_DIRECTORY)
         gobs = glob.glob(globber)
         for g in gobs:
             os.remove(g)
@@ -132,10 +137,14 @@ class Claptto(threading.Thread):
         print(mycmd)
         self.in_image_session = True
         subprocess.call(mycmd)
-        print("PICTURE DONE!")
-        self.pic_count += 1
         self.in_image_session = False
+        print("PICTURE DONE!")
         self.do_notify(1)
+        # CONVERT FROM PNG TO GIF
+        mycmd = self.pngtogifcmd.format(PNG_DIRECTORY, self.pic_count, PNG_DIRECTORY, self.pic_count)
+        mycmd = mycmd.split()
+        print(mycmd)
+        self.pic_count += 1
 
     # CLAP DETERMINER
     # LOGIC FROM
@@ -174,7 +183,7 @@ class Claptto(threading.Thread):
             self.in_clap_session = False
             # DO WORK SON
             self.make_gif()
-            self.remove_interim_png()
+            self.remove_interim_images()
             self.pic_count = 0
 
     def run(self):
