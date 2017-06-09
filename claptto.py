@@ -29,11 +29,11 @@ RETRIES = 10
 DEVICE = "/dev/video0"
 RESO = "640x480" #"1280x720"
 LOOP_COUNT = 0
-DELAY = 35
+DELAY = 20
 NOTIFY_ON_TIME = 0.3
 NOTIFY_LOOP_COUNT = 4
 GIF_DIRECTORY = "/mnt/pictures"
-PNG_DIRECTORY = "/mnt/pngs"
+TMP_DIRECTORY = "/tmp_images"
 
 # GLOBAL VARIABLES
 printonce = True
@@ -62,9 +62,9 @@ class Claptto(threading.Thread):
         if not os.path.exists(GIF_DIRECTORY):
             print("CREATING GIF DIRECTORY")
             os.makedirs(GIF_DIRECTORY)
-        if not os.path.exists(PNG_DIRECTORY):
+        if not os.path.exists(TMP_DIRECTORY):
             print("CREATING TEMPORARY PNG DIRECTORY")
-            os.makedirs(PNG_DIRECTORY)
+            os.makedirs(TMP_DIRECTORY)
 
     def kill(self):
         self.dead = True
@@ -109,9 +109,9 @@ class Claptto(threading.Thread):
         print("WE BE MAKIN THOSE GIFS YOU SEE")
         ctime = int(datetime.datetime.utcnow().strftime("%s"))
         # FFMPEG
-        #mycmd = self.gifcmd.format(self.loop_count, self.delay, PNG_DIRECTORY, GIF_DIRECTORY, ctime)
+        #mycmd = self.gifcmd.format(self.loop_count, self.delay, TMP_DIRECTORY, GIF_DIRECTORY, ctime)
         # GIFSICLE
-        mycmd = self.gifcmd.format(self.delay, PNG_DIRECTORY, GIF_DIRECTORY, ctime)
+        mycmd = self.gifcmd.format(self.delay, TMP_DIRECTORY, GIF_DIRECTORY, ctime)
         print(mycmd)
         self.in_image_session = True
         # MAKE GIF
@@ -122,7 +122,7 @@ class Claptto(threading.Thread):
 
     # REMOVE THE INTERIM PNG
     def remove_interim_images(self):
-        globber = "{0}/int_*.*".format(PNG_DIRECTORY)
+        globber = "{0}/int_*.*".format(TMP_DIRECTORY)
         gobs = glob.glob(globber)
         for g in gobs:
             os.remove(g)
@@ -134,7 +134,7 @@ class Claptto(threading.Thread):
 
         print("HERE BE PICTURE TAKIN")
         # QUIET DEVICE RESO NO BANNER PNG 
-        mycmd = self.piccmd.format(self.device, self.reso, PNG_DIRECTORY, self.pic_count)
+        mycmd = self.piccmd.format(self.device, self.reso, TMP_DIRECTORY, self.pic_count)
         mycmd = mycmd.split()
         print(mycmd)
         self.in_image_session = True
@@ -143,7 +143,7 @@ class Claptto(threading.Thread):
         print("PICTURE DONE!")
         self.do_notify(1)
         # CONVERT FROM PNG TO GIF
-        mycmd = self.pngtogifcmd.format(PNG_DIRECTORY, self.pic_count, PNG_DIRECTORY, self.pic_count)
+        mycmd = self.pngtogifcmd.format(TMP_DIRECTORY, self.pic_count, TMP_DIRECTORY, self.pic_count)
         mycmd = mycmd.split()
         print(mycmd)
         self.pic_count += 1
