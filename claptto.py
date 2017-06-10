@@ -55,6 +55,8 @@ class Claptto(threading.Thread):
         self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
         #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
         self.gifcmd = "gifsicle --loopcount --delay={0} --colors 256 {1}/*.gif -o {2}/claptto_pic_{3}.gif"
+        # CREATE THREADING EVENT FOR KILL
+        self.shutdown_flag = threading.Event()
         # CHECK FOR THE DIRECTORY TO STORE MOVIES
         self._directory_check()
 
@@ -67,6 +69,7 @@ class Claptto(threading.Thread):
             os.makedirs(TMP_DIRECTORY)
 
     def kill(self):
+        self.shutdown_flag.set()
         self.dead = True
         # FORCE THIS TO BE FALSE TO KICK US OUT
         self.in_clap_session = False
@@ -146,6 +149,8 @@ class Claptto(threading.Thread):
         mycmd = self.pngtogifcmd.format(TMP_DIRECTORY, self.pic_count, TMP_DIRECTORY, self.pic_count)
         mycmd = mycmd.split()
         print(mycmd)
+        subprocess.call(mycmd)
+        print("PNG TO GIF CONVERTED HOMIE!")
         self.pic_count += 1
 
     # CLAP DETERMINER
@@ -189,7 +194,7 @@ class Claptto(threading.Thread):
             self.pic_count = 0
 
     def run(self):
-        while not self.dead:
+        while not self.shutdown_flag.is_set():
             while not self.in_clap_session:
                 if self.dead:
                     break
@@ -216,12 +221,15 @@ def Main():
             pass
 
     except KeyboardInterrupt:
+        # KILL CLAPTTO OBJECT
+        claptto.kill()
         dead = True
-
-    # CLEANUP
-    print("CLEANUP")
-    claptto.kill()
-    GPIO.cleanup()
+    finally:
+        # CLEANUP
+        print("WAITING FOR CLAPTTO THREAD JOIN")
+        claptto.join()
+        print("CLEANUP")
+        GPIO.cleanup()
 
 if __name__ == "__main__":
     Main()
