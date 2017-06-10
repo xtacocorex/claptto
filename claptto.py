@@ -38,7 +38,7 @@ TMP_DIRECTORY = "/tmp_images"
 
 # GLOBAL VARIABLES
 printonce = True
-convertqueue = Queue.queue(1)
+convertqueue = Queue.Queue(1)
 
 # CLASSES
 class PngToGifConverter(threading.Thread):
