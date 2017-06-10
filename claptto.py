@@ -8,6 +8,7 @@
 # MODULE IMPORTS
 import CHIP_IO.GPIO as GPIO
 import threading
+import Queue
 import alsaaudio
 import audioop
 import math
@@ -37,11 +38,47 @@ TMP_DIRECTORY = "/tmp_images"
 
 # GLOBAL VARIABLES
 printonce = True
+convertqueue = Queue.queue(1)
 
 # CLASSES
+class PngToGifConverter(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
+        # CREATE THREADING EVENT FOR KILL
+        self.shutdown_flag = threading.Event()
+        # CHECK FOR THE DIRECTORY TO STORE MOVIES
+        self._directory_check()
+
+    def kill(self):
+        self.shutdown_flag.set()
+
+    def _directory_check(self):
+        if not os.path.exists(GIF_DIRECTORY):
+            print("CREATING GIF DIRECTORY")
+            os.makedirs(GIF_DIRECTORY)
+        if not os.path.exists(TMP_DIRECTORY):
+            print("CREATING TEMPORARY PNG DIRECTORY")
+            os.makedirs(TMP_DIRECTORY)
+
+    def run(self):
+        while not self.shutdown_flag.is_set():
+            # GET DATA FROM QUEUE
+            imgnum = convertqueue.get()
+            # CONVERT FROM PNG TO GIF
+            mycmd = self.pngtogifcmd.format(TMP_DIRECTORY, imgnum, TMP_DIRECTORY, imgnum)
+            mycmd = mycmd.split()
+            print(mycmd)
+            subprocess.call(mycmd)
+            print("INTERIM PNG TO GIF CONVERTED HOMIE!")
+            convertqueue.task_done()
+        print("PNG TO GIF CONVERTER KILLED")
+
+
 class Claptto(threading.Thread):
     def __init__(self, gpio, device, reso, loop_count, delay):
         threading.Thread.__init__(self)
+        self.png2gif = PngToGifConverter()
         self.gpio = gpio
         self.device = device
         self.reso = reso
@@ -52,7 +89,6 @@ class Claptto(threading.Thread):
         self.in_clap_session = False
         self.in_image_session = False
         self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
-        self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
         #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
         self.gifcmd = "gifsicle --loopcount --delay={0} --colors 256 {1}/*.gif -o {2}/claptto_pic_{3}.gif"
         # CREATE THREADING EVENT FOR KILL
@@ -70,6 +106,7 @@ class Claptto(threading.Thread):
 
     def kill(self):
         self.shutdown_flag.set()
+        self.png2gif.kill()
         self.dead = True
         # FORCE THIS TO BE FALSE TO KICK US OUT
         self.in_clap_session = False
@@ -144,14 +181,12 @@ class Claptto(threading.Thread):
         subprocess.call(mycmd)
         self.in_image_session = False
         print("PICTURE DONE!")
-        self.do_notify(1)
-        # CONVERT FROM PNG TO GIF
-        mycmd = self.pngtogifcmd.format(TMP_DIRECTORY, self.pic_count, TMP_DIRECTORY, self.pic_count)
-        mycmd = mycmd.split()
-        print(mycmd)
-        subprocess.call(mycmd)
-        print("PNG TO GIF CONVERTED HOMIE!")
+        # TELL THE CONVERTER TO DO STUFF
+        convertqueue.put(self.pic_count)
+        # UPDATE PIC COUNT
         self.pic_count += 1
+        # NOTIFY
+        self.do_notify(1)
 
     # CLAP DETERMINER
     # LOGIC FROM
@@ -194,17 +229,16 @@ class Claptto(threading.Thread):
             self.pic_count = 0
 
     def run(self):
+        self.png2gif.start()
         while not self.shutdown_flag.is_set():
-            while not self.in_clap_session:
-                if self.dead:
-                    break
-                else:
-                    pass
             if self.in_clap_session:
                 if self.detect_clap(RETRIES) and not self.in_image_session:
                     print("YAY, CLAP")
                     self.take_picture()
+            else:
+                pass
         print("CLAPTTO KILLED")
+        self.png2gif.join()
 
 # MAIN
 def Main():
