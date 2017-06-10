@@ -90,7 +90,7 @@ class Claptto(threading.Thread):
         self.in_image_session = False
         self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
         #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
-        self.gifcmd = "gifsicle --loopcount --delay={0} --colors 256 {1}/*.gif -o {2}/claptto_pic_{3}.gif"
+        self.gifcmd = "gifsicle --loopcount --delay={0} --colors 256 -i {1}/*.gif -o {2}/claptto_pic_{3}.gif"
         # CREATE THREADING EVENT FOR KILL
         self.shutdown_flag = threading.Event()
         # CHECK FOR THE DIRECTORY TO STORE MOVIES
