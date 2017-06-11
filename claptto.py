@@ -49,10 +49,10 @@ class ProgramExit(Exception):
 
 def program_shutdown(signum, frame):
     print('CAUGHT SIGNAL %d' % signum)
-    print("GPIO CLEANUP")
+    #print("GPIO CLEANUP")
     #GPIO.cleanup()
-    #sys.exit(0)
-    raise ProgramExit
+    sys.exit(0)
+    #raise ProgramExit
 
 class PngToGifConverter(threading.Thread):
     def __init__(self):
@@ -75,18 +75,19 @@ class PngToGifConverter(threading.Thread):
             os.makedirs(TMP_DIRECTORY)
 
     def run(self):
-        while not self.shutdown_flag.is_set():
-            # GET DATA FROM QUEUE
-            imgnum = convertqueue.get()
-            # CONVERT FROM PNG TO GIF
-            mycmd = self.pngtogifcmd.format(TMP_DIRECTORY, imgnum, TMP_DIRECTORY, imgnum)
-            mycmd = mycmd.split()
-            print(mycmd)
-            subprocess.call(mycmd)
-            print("INTERIM PNG TO GIF CONVERTED HOMIE!")
-            convertqueue.task_done()
-        print("PNG TO GIF CONVERTER KILLED")
-
+        try: 
+            while not self.shutdown_flag.is_set():
+                # GET DATA FROM QUEUE
+                imgnum = convertqueue.get()
+                # CONVERT FROM PNG TO GIF
+                mycmd = self.pngtogifcmd.format(TMP_DIRECTORY, imgnum, TMP_DIRECTORY, imgnum)
+                mycmd = mycmd.split()
+                print(mycmd)
+                subprocess.call(mycmd)
+                print("INTERIM PNG TO GIF CONVERTED HOMIE!")
+                convertqueue.task_done()
+        except ProgramExit, KeyboardInterrupt
+            print("PNG TO GIF CONVERTER KILLED")
 
 class Claptto(threading.Thread):
     def __init__(self, gpio, device, reso, loop_count, delay):
@@ -245,7 +246,7 @@ class Claptto(threading.Thread):
                 if self.in_clap_session and self.detect_clap(RETRIES) and not self.in_image_session:
                     print("YAY, CLAP")
                     self.take_picture()
-        except ProgramExit:
+        except ProgramExit, KeyboardInterrupt:
             print("CLAPTTO KILLED")
             self.shutdown_flag.set()
             self.png2gif.kill()
@@ -255,8 +256,8 @@ class Claptto(threading.Thread):
 def Main():
 
     # SETUP KILL SIGNALS
-    signal.signal(signal.SIGTERM, program_shutdown)
-    signal.signal(signal.SIGINT, program_shutdown)
+    #signal.signal(signal.SIGTERM, program_shutdown)
+    #signal.signal(signal.SIGINT, program_shutdown)
 
     # HACK FOR CLEANING UP GPIO IN A DOCKER CONTAINER
 
@@ -273,7 +274,7 @@ def Main():
         while not dead:
             time.sleep(0.5)
 
-    except ProgramExit:
+    except ProgramExit, KeyboardInterrupt:
         dead = True
         print("CLEANUP")
         # KILL CLAPTTO OBJECT
