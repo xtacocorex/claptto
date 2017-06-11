@@ -18,6 +18,7 @@ import glob
 import os
 import time
 import signal
+import sys
 
 # CONSTANTS
 LO = math.log(2000)
@@ -47,7 +48,10 @@ class ProgramExit(Exception):
 
 def program_shutdown(signum, frame):
     print('CAUGHT SIGNAL %d' % signum)
-    raise ProgramExit
+    print("GPIO CLEANUP")
+    GPIO.cleanup()
+    sys.exit(0)
+    #raise ProgramExit
 
 class PngToGifConverter(threading.Thread):
     def __init__(self):
