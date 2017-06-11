@@ -17,6 +17,7 @@ import subprocess
 import glob
 import os
 import time
+import signal
 
 # CONSTANTS
 LO = math.log(2000)
@@ -41,6 +42,13 @@ printonce = True
 convertqueue = Queue.Queue(1)
 
 # CLASSES
+class ProgramExit(Exception):
+    pass
+
+def program_shutdown(signum, frame):
+    print('CAUGHT SIGNAL %d' % signum)
+    raise ProgramExit
+
 class PngToGifConverter(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
@@ -242,6 +250,11 @@ class Claptto(threading.Thread):
 
 # MAIN
 def Main():
+
+    # SETUP KILL SIGNALS
+    signal.signal(signal.SIGTERM, program_shutdown)
+    signal.signal(signal.SIGINT, program_shutdown)
+
     # CREATE OUR GIF CAMERA
     claptto = Claptto(GPIO, DEVICE, RESO, LOOP_COUNT, DELAY)
     claptto.setup_alsa()
@@ -252,16 +265,14 @@ def Main():
     dead = False
     try:
         while not dead:
-            pass
+            time.sleep(0.5)
 
-    except KeyboardInterrupt:
+    except ProgramExit:
         # KILL CLAPTTO OBJECT
         claptto.kill()
         dead = True
     finally:
         # CLEANUP
-        print("WAITING FOR CLAPTTO THREAD JOIN")
-        claptto.join()
         print("CLEANUP")
         GPIO.cleanup()
 
