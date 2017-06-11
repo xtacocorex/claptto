@@ -235,12 +235,16 @@ class Claptto(threading.Thread):
 
     def run(self):
         self.png2gif.start()
-        while not self.shutdown_flag.is_set():
-            if self.in_clap_session and if self.detect_clap(RETRIES) and not self.in_image_session:
-                print("YAY, CLAP")
-                self.take_picture()
-        print("CLAPTTO KILLED")
-        #self.png2gif.join()
+        try:
+            while not self.shutdown_flag.is_set():
+                if self.in_clap_session and self.detect_clap(RETRIES) and not self.in_image_session:
+                    print("YAY, CLAP")
+                    self.take_picture()
+        except ProgramExit:
+            print("CLAPTTO KILLED")
+            self.shutdown_flag.set()
+            self.png2gif.kill()
+            self.png2gif.join()
 
 # MAIN
 def Main():
@@ -262,12 +266,10 @@ def Main():
             time.sleep(0.5)
 
     except ProgramExit:
+        dead = True
+        print("CLEANUP")
         # KILL CLAPTTO OBJECT
         claptto.kill()
-        dead = True
-    finally:
-        # CLEANUP
-        print("CLEANUP")
         GPIO.cleanup()
 
 if __name__ == "__main__":
