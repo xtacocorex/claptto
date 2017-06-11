@@ -97,7 +97,6 @@ class Claptto(threading.Thread):
         self.in_clap_session = False
         self.in_image_session = False
         self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
-        #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
         self.gifcmd = "gifsicle --loopcount --delay={0} -i {1}/*.gif -o {2}/claptto_pic_{3}.gif"
         # CREATE THREADING EVENT FOR KILL
         self.shutdown_flag = threading.Event()
@@ -156,8 +155,6 @@ class Claptto(threading.Thread):
 
         print("WE BE MAKIN THOSE GIFS YOU SEE")
         ctime = int(datetime.datetime.utcnow().strftime("%s"))
-        # FFMPEG
-        #mycmd = self.gifcmd.format(self.loop_count, self.delay, TMP_DIRECTORY, GIF_DIRECTORY, ctime)
         # GIFSICLE
         mycmd = self.gifcmd.format(self.delay, TMP_DIRECTORY, GIF_DIRECTORY, ctime)
         print(mycmd)
@@ -239,12 +236,9 @@ class Claptto(threading.Thread):
     def run(self):
         self.png2gif.start()
         while not self.shutdown_flag.is_set():
-            if self.in_clap_session:
-                if self.detect_clap(RETRIES) and not self.in_image_session:
-                    print("YAY, CLAP")
-                    self.take_picture()
-            else:
-                pass
+            if self.in_clap_session and if self.detect_clap(RETRIES) and not self.in_image_session:
+                print("YAY, CLAP")
+                self.take_picture()
         print("CLAPTTO KILLED")
         #self.png2gif.join()
 
