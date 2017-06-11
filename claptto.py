@@ -7,6 +7,7 @@
 
 # MODULE IMPORTS
 import CHIP_IO.GPIO as GPIO
+import CHIP_IO.Utilities as UT
 import threading
 import Queue
 import alsaaudio
@@ -49,9 +50,9 @@ class ProgramExit(Exception):
 def program_shutdown(signum, frame):
     print('CAUGHT SIGNAL %d' % signum)
     print("GPIO CLEANUP")
-    GPIO.cleanup()
-    sys.exit(0)
-    #raise ProgramExit
+    #GPIO.cleanup()
+    #sys.exit(0)
+    raise ProgramExit
 
 class PngToGifConverter(threading.Thread):
     def __init__(self):
@@ -257,6 +258,9 @@ def Main():
     signal.signal(signal.SIGTERM, program_shutdown)
     signal.signal(signal.SIGINT, program_shutdown)
 
+    # HACK FOR CLEANING UP GPIO IN A DOCKER CONTAINER
+
+
     # CREATE OUR GIF CAMERA
     claptto = Claptto(GPIO, DEVICE, RESO, LOOP_COUNT, DELAY)
     claptto.setup_alsa()
@@ -274,7 +278,7 @@ def Main():
         print("CLEANUP")
         # KILL CLAPTTO OBJECT
         claptto.kill()
-        GPIO.cleanup()
+        #GPIO.cleanup()
 
 if __name__ == "__main__":
     Main()
