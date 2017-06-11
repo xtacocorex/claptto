@@ -98,7 +98,7 @@ class Claptto(threading.Thread):
         self.in_image_session = False
         self.piccmd = "fswebcam -q -d {0} -r{1} --no-banner --png 9 {2}/int_pic_{3:03d}.png"
         #self.gifcmd = "convert -loop {0} -delay {1} {2}/int_pic_*.png {3}/claptto_pic_{4}.gif"
-        self.gifcmd = "gifsicle --loopcount --delay={0} --colors 256 -i {1}/*.gif -o {2}/claptto_pic_{3}.gif"
+        self.gifcmd = "gifsicle --loopcount --delay={0} -i {1}/*.gif -o {2}/claptto_pic_{3}.gif"
         # CREATE THREADING EVENT FOR KILL
         self.shutdown_flag = threading.Event()
         # CHECK FOR THE DIRECTORY TO STORE MOVIES
@@ -162,8 +162,8 @@ class Claptto(threading.Thread):
         mycmd = self.gifcmd.format(self.delay, TMP_DIRECTORY, GIF_DIRECTORY, ctime)
         print(mycmd)
         self.in_image_session = True
-        # MAKE GIF
-        subprocess.call(mycmd.split())
+        # MAKE GIF - NEED THE SHELL FOR THE WILDCARD
+        subprocess.call(mycmd, shell=True)
         print("GREAT GIF DUDE!")
         self.do_notify(3)
         self.in_image_session = False
@@ -246,7 +246,7 @@ class Claptto(threading.Thread):
             else:
                 pass
         print("CLAPTTO KILLED")
-        self.png2gif.join()
+        #self.png2gif.join()
 
 # MAIN
 def Main():
