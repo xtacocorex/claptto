@@ -86,7 +86,7 @@ class PngToGifConverter(threading.Thread):
                 subprocess.call(mycmd)
                 print("INTERIM PNG TO GIF CONVERTED HOMIE!")
                 convertqueue.task_done()
-        except ProgramExit, KeyboardInterrupt
+        except ProgramExit, KeyboardInterrupt:
             print("PNG TO GIF CONVERTER KILLED")
 
 class Claptto(threading.Thread):
