@@ -33,7 +33,7 @@ RETRIES = 10
 DEVICE = "/dev/video0"
 RESO = "640x480" #"1280x720"
 LOOP_COUNT = 0
-DELAY = 20
+DELAY = 35
 NOTIFY_ON_TIME = 0.3
 NOTIFY_LOOP_COUNT = 4
 GIF_DIRECTORY = "/mnt/pictures"
@@ -55,8 +55,10 @@ def program_shutdown(signum, frame):
     #raise ProgramExit
 
 class PngToGifConverter(threading.Thread):
-    def __init__(self):
+    def __init__(self, gpio):
         threading.Thread.__init__(self)
+        self.gpio = gpio
+        self.ledpin = ""ledpin""
         self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
         # CREATE THREADING EVENT FOR KILL
         self.shutdown_flag = threading.Event()
@@ -74,6 +76,17 @@ class PngToGifConverter(threading.Thread):
             print("CREATING TEMPORARY PNG DIRECTORY")
             os.makedirs(TMP_DIRECTORY)
 
+    def setup_notifier_pin(self, ledpin):
+        self.ledpin = ledpin
+
+    def do_notify(self, repeats):
+        if self.ledpin != "":
+            for i in range(repeats):
+                self.gpio.output(self.ledpin, 1)
+                time.sleep(self.ontime)
+                self.gpio.output(self.ledpin, 0)
+                time.sleep(self.ontime / 2.0)
+
     def run(self):
         try: 
             while not self.shutdown_flag.is_set():
@@ -86,13 +99,15 @@ class PngToGifConverter(threading.Thread):
                 subprocess.call(mycmd)
                 print("INTERIM PNG TO GIF CONVERTED HOMIE!")
                 convertqueue.task_done()
+                # NOTIFY
+                self.do_notify(2)
         except ProgramExit, KeyboardInterrupt:
             print("PNG TO GIF CONVERTER KILLED")
 
 class Claptto(threading.Thread):
     def __init__(self, gpio, device, reso, loop_count, delay):
         threading.Thread.__init__(self)
-        self.png2gif = PngToGifConverter()
+        self.png2gif = PngToGifConverter(gpio)
         self.gpio = gpio
         self.device = device
         self.reso = reso
@@ -141,6 +156,7 @@ class Claptto(threading.Thread):
 
     def setup_notifier(self, ledpin, ontime, repeats=1):
         self.ledpin = ledpin
+        self.png2gif.setup_notifier_pin(ledpin)
         self.ontime = ontime
         self.repeats = repeats
         # EXPORT NOTIFIER PIN
@@ -256,11 +272,11 @@ class Claptto(threading.Thread):
 def Main():
 
     # SETUP KILL SIGNALS
-    #signal.signal(signal.SIGTERM, program_shutdown)
-    #signal.signal(signal.SIGINT, program_shutdown)
+    signal.signal(signal.SIGTERM, program_shutdown)
+    signal.signal(signal.SIGINT, program_shutdown)
 
     # HACK FOR CLEANING UP GPIO IN A DOCKER CONTAINER
-
+    UT.unexport_all()
 
     # CREATE OUR GIF CAMERA
     claptto = Claptto(GPIO, DEVICE, RESO, LOOP_COUNT, DELAY)
