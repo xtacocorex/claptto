@@ -75,8 +75,9 @@ class PngToGifConverter(threading.Thread):
             print("CREATING TEMPORARY PNG DIRECTORY")
             os.makedirs(TMP_DIRECTORY)
 
-    def setup_notifier_pin(self, ledpin):
+    def setup_notifier_pin(self, ledpin, ontime):
         self.ledpin = ledpin
+        self.ontime = ontime
 
     def do_notify(self, repeats):
         if self.ledpin != "":
@@ -155,9 +156,9 @@ class Claptto(threading.Thread):
 
     def setup_notifier(self, ledpin, ontime, repeats=1):
         self.ledpin = ledpin
-        self.png2gif.setup_notifier_pin(ledpin)
         self.ontime = ontime
         self.repeats = repeats
+        self.png2gif.setup_notifier_pin(ledpin, ontime)
         # EXPORT NOTIFIER PIN
         print("EXPORTING SIGNAL PIN")
         self.gpio.setup(self.ledpin, self.gpio.OUT)
