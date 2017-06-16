@@ -58,7 +58,7 @@ class PngToGifConverter(threading.Thread):
     def __init__(self, gpio):
         threading.Thread.__init__(self)
         self.gpio = gpio
-        self.ledpin = ""ledpin""
+        self.ledpin = ledpin
         self.pngtogifcmd = "convert {0}/int_pic_{1:03d}.png {2}/int_pic_{3:03d}.gif"
         # CREATE THREADING EVENT FOR KILL
         self.shutdown_flag = threading.Event()
