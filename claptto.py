@@ -36,7 +36,7 @@ LOOP_COUNT = 0
 DELAY = 35
 NOTIFY_ON_TIME = 0.3
 NOTIFY_LOOP_COUNT = 4
-GIF_DIRECTORY = "/mnt/pictures"
+GIF_DIRECTORY = "/data/pictures"
 TMP_DIRECTORY = "/tmp_images"
 
 # GLOBAL VARIABLES
